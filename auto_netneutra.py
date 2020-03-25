@@ -207,6 +207,7 @@ def run_single_tests(ports, size):
                 if not is_anormal_single(resultconfirm):
                     statusconfirm = "ok"
             except Exception as e:
+                print(e.args)
                 pass
 
             if statusconfirm == "ok":
