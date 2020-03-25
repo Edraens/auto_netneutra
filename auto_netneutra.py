@@ -80,9 +80,9 @@ def launch_curl(port, size, type, date):
         if cmd.poll() != None:
             if DEBUG:
                 print(cmd.poll())
-            if cmd.poll() == 7:
+            if cmd.poll() in (7, 28):
                 raise Exception("curl_closed")
-            elif cmd.poll() not in (0, 28):
+            elif cmd.poll() != 0:
                 raise Exception("curl_error")
             break
 
