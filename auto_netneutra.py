@@ -70,7 +70,6 @@ def launch_curl(port, size, type, date):
 
     if type == "Single":
         args = "--progress-bar"
-        args = ""
     elif type == "Concurrent":
         args = "-s"
 
