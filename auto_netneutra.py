@@ -22,7 +22,7 @@ import concurrent.futures
 
 # Paramètres
 TIMEOUT = 20
-DEBUG = True
+DEBUG = False
 
 
 def save_csv_single(result):
