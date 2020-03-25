@@ -68,13 +68,8 @@ def launch_curl(port, size, type, date):
     else:
         protocol = "https"
 
-    if type == "Single":
-        args = "--progress-bar"
-    elif type == "Concurrent":
-        args = "-s"
-
     url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso'
-    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url+' --connect-timeout 5 '+args, shell=True, stdout=subprocess.PIPE)
+    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url+' --connect-timeout 5 -s', shell=True, stdout=subprocess.PIPE)
     while True:
         time.sleep(2)
         if cmd.poll() != None:
