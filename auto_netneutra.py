@@ -84,7 +84,7 @@ def launch_curl(port, size, type, date):
                 raise Exception("curl_error")
             break
 
-    rate = float(cmd.stdout.readline().decode("utf-8"))*8
+    rate = float(cmd.stdout.readline().decode("utf-8").replace(",", "."))*8
     return(rate)
 
 
