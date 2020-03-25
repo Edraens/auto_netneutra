@@ -22,6 +22,7 @@ import concurrent.futures
 
 # Paramètres
 TIMEOUT = 20
+DEBUG = True
 
 
 def save_csv_single(result):
@@ -68,11 +69,17 @@ def launch_curl(port, size, type, date):
     else:
         protocol = "https"
 
+    if DEBUG:
+        args = ""
+    else: args = "-s"
+
     url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso'
-    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url+' --connect-timeout 5 -s', shell=True, stdout=subprocess.PIPE)
+    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url+' --connect-timeout 5 '+args, shell=True, stdout=subprocess.PIPE)
     while True:
         time.sleep(2)
         if cmd.poll() != None:
+            if DEBUG:
+                print(cmd.poll())
             if cmd.poll() == 7:
                 raise Exception("curl_closed")
             elif cmd.poll() not in (0, 28):
