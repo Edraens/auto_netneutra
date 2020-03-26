@@ -97,9 +97,10 @@ def launch_curl(port, size, type, date):
     return(rate)
 
 
-def launch_iperf_udp(delay):
+def launch_iperf_udp(delay, type="Single"):
     global normal_rate_kbps
     bandwidth = str(int(normal_rate_kbps))+"k"
+    i=1
     while True:
         success = False
         port = random.randrange(9200, 9223)
@@ -126,8 +127,14 @@ def launch_iperf_udp(delay):
 
             rate = int(sender_rate*(1-lost_percentage)/1000)
             break
+        i=i+1
 
-    return(rate)
+    if DEBUG:
+        print("Nombre d'essais : "+str(i))
+
+    if type == "Single":
+        return(rate)
+    else: return (-1)
 
 
 def launch_tcpdump(port, size, type, interface, date):
@@ -319,43 +326,51 @@ def run_concurrent_tests(tests, size):
     for test in tests:
         result = {}
         date = datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
-        if tcpdump == "True":
-            tcpdump_process = launch_tcpdump(
-                "s"+test[0]+"-"+test[1], size, "Concurrent", interface, date)
-        time.sleep(0.8)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
 
-            if test[1] != "UDP":
-                second = executor.submit(
-                    launch_curl, test[1], size, "Concurrent", date)
-            else:
-                second = executor.submit(launch_iperf_udp, 11)
-
-            if test[0] != "UDP":
-                first = executor.submit(
-                    launch_curl, test[0], size, "Concurrent", date)
-            else:
-                first = executor.submit(launch_iperf_udp, 11)
-
-            i = 0
-            tstamp = ""
-            while not first.done() or not second.done():
-                time.sleep(1)
-                if first.done():
-                    difference = 0
-                    while not second.done():
-                        time.sleep(1)
-                        difference = difference + 1
-                elif second.done():
-                    difference = 0
-                    while not first.done():
-                        time.sleep(1)
-                        difference = difference + 1
-
-            time.sleep(1)
+        while True:
             if tcpdump == "True":
-                tcpdump_process[0].terminate()
+                tcpdump_process = launch_tcpdump(
+                    "s"+test[0]+"-"+test[1], size, "Concurrent", interface, date)
+            time.sleep(0.8)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+
+                if test[1] != "UDP":
+                    second = executor.submit(
+                        launch_curl, test[1], size, "Concurrent", date)
+                else:
+                    second = executor.submit(launch_iperf_udp, 11, "Concurrent")
+
+                if test[0] != "UDP":
+                    first = executor.submit(
+                        launch_curl, test[0], size, "Concurrent", date)
+                else:
+                    first = executor.submit(launch_iperf_udp, 11, "Concurrent")
+
+                i = 0
+                tstamp = ""
+                while not first.done() or not second.done():
+                    time.sleep(1)
+                    if first.done():
+                        difference = 0
+                        while not second.done():
+                            time.sleep(1)
+                            difference = difference + 1
+                    elif second.done():
+                        difference = 0
+                        while not first.done():
+                            time.sleep(1)
+                            difference = difference + 1
+
                 time.sleep(1)
+                if tcpdump == "True":
+                    tcpdump_process[0].terminate()
+                    time.sleep(1)
+
+                if int(first.result()) != "-1" and int(second.result()) != "-1":
+                    break
+                elif DEBUG:
+                    print("Retry concurrent, iPerf KO...")
+
             message = ""
             color = "--"
             result['flag'] = "pass"
