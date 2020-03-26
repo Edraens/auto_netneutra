@@ -23,7 +23,7 @@ import random
 import json
 
 # Paramètres
-DEBUG = False
+DEBUG = True
 
 
 def save_csv_single(result):
@@ -324,17 +324,18 @@ def run_concurrent_tests(tests, size):
                 "s"+test[0]+"-"+test[1], size, "Concurrent", interface, date)
         time.sleep(0.8)
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            if test[0] != "UDP":
-                first = executor.submit(
-                    launch_curl, test[0], size, "Concurrent", date)
-            else:
-                first = executor.submit(launch_iperf_udp, 11)
 
             if test[1] != "UDP":
                 second = executor.submit(
                     launch_curl, test[1], size, "Concurrent", date)
             else:
                 second = executor.submit(launch_iperf_udp, 11)
+
+            if test[0] != "UDP":
+                first = executor.submit(
+                    launch_curl, test[0], size, "Concurrent", date)
+            else:
+                first = executor.submit(launch_iperf_udp, 11)
 
             i = 0
             tstamp = ""
