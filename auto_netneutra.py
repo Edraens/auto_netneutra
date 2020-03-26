@@ -20,9 +20,10 @@ import csv
 import configparser
 import concurrent.futures
 import random
+import json
 
 # Paramètres
-DEBUG = True
+DEBUG = False
 
 
 def save_csv_single(result):
@@ -99,15 +100,18 @@ def launch_curl(port, size, type, date):
 def launch_iperf_udp(delay):
     global normal_rate_kbps
     bandwidth = str(int(normal_rate_kbps)+1000)+"k"
+    bandwidth = "1300000k"
     while True:
         success = False
         port = random.randrange(9200, 9223)
         if DEBUG:
             print("iPerf sur port "+str(port))
             print("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b "+bandwidth+" -t "+str(delay))
-        cmd = subprocess.Popen("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b 1100M -t "+str(delay),
+        cmd = subprocess.Popen("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -J -R -b "+bandwidth+" -t "+str(delay),
                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
+        result = json.loads(cmd.communicate()[0])
+
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -116,29 +120,12 @@ def launch_iperf_udp(delay):
                 if cmd.poll() == 0:
                     success = True
                 break
-
+        
         if success:
-            result = cmd.communicate()[0].decode("utf-8").split("\n")
-            raw = result[len(result)-4].split("  ")[5].strip()
-            raw_rate = raw.split(" ")[0]
-            raw_rate_unit = raw.split(" ")[1]
+            sender_rate = result['end']['sum']['bits_per_second']
+            lost_percentage = result['end']['sum']['lost_percent']/100
 
-            if raw_rate_unit == "":
-                raw = result[len(result)-6].split("  ")[5].strip()
-                raw_rate = raw.split(" ")[0]
-                raw_rate_unit = raw.split(" ")[1]
-
-            if DEBUG:
-                print(result)
-                print(raw)
-                print(raw_rate)
-                print(raw_rate_unit)
-            if raw_rate_unit == "Mbits/sec":
-                rate = int(raw_rate)*1000
-            elif raw_rate_unit == "Kbits/sec":
-                rate = int(raw_rate)
-            else:
-                rate = 0
+            rate = int(sender_rate*(1-lost_percentage)/1000)
             break
 
     return(rate)
