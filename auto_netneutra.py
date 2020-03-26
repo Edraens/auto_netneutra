@@ -123,6 +123,7 @@ def launch_iperf_udp(delay):
             raw_rate = raw.split(" ")[0]
             raw_rate_unit = raw.split(" ")[1]
             if DEBUG:
+                print(result)
                 print(raw)
                 print(raw_rate)
                 print(raw_rate_unit)
