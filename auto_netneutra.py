@@ -104,7 +104,7 @@ def launch_iperf_udp(delay):
         port = random.randrange(9200, 9223)
         if DEBUG:
             print("iPerf sur port "+str(port))
-            print("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b 1100M -t "+str(delay))
+            print("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b "+bandwidth+" -t "+str(delay))
         cmd = subprocess.Popen("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b 1100M -t "+str(delay),
                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
