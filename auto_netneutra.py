@@ -98,7 +98,7 @@ def launch_curl(port, size, type, date):
 
 def launch_iperf_udp(delay):
     global normal_rate_kbps
-    bandwidth = str(int(normal_rate_kbps)+20000)+"k"
+    bandwidth = str(int(normal_rate_kbps)+1000)+"k"
     while True:
         success = False
         port = random.randrange(9200, 9223)
