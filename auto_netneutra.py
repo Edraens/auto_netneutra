@@ -70,7 +70,7 @@ def launch_curl(port, size, type, date):
     else:
         protocol = "https"
 
-    url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso'
+    url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso' 
 
     if DEBUG:
         args = ""
