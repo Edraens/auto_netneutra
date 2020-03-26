@@ -22,7 +22,7 @@ import concurrent.futures
 import random
 
 # Paramètres
-DEBUG = False
+DEBUG = True
 
 
 def save_csv_single(result):
@@ -122,6 +122,12 @@ def launch_iperf_udp(delay):
             raw = result[len(result)-4].split("  ")[5].strip()
             raw_rate = raw.split(" ")[0]
             raw_rate_unit = raw.split(" ")[1]
+
+            if raw_rate_unit == "":
+                raw = result[len(result)-6].split("  ")[5].strip()
+                raw_rate = raw.split(" ")[0]
+                raw_rate_unit = raw.split(" ")[1]
+
             if DEBUG:
                 print(result)
                 print(raw)
