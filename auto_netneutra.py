@@ -79,7 +79,7 @@ def launch_curl(port, size, type, date):
         args = "-s"
 
     cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url +
-                           ' --connect-timeout 5 --max-time 12 '+args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                           ' --connect-timeout 5 --max-time 10 '+args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
         time.sleep(2)
         if cmd.poll() != None:
@@ -341,13 +341,14 @@ def run_concurrent_tests(tests, size):
                     second = executor.submit(
                         launch_curl, test[1], size, "Concurrent", date)
                 else:
-                    second = executor.submit(launch_iperf_udp, 11, "Concurrent")
+                    second = executor.submit(launch_iperf_udp, 12, "Concurrent")
+                    time.sleep(1)
 
                 if test[0] != "UDP":
                     first = executor.submit(
                         launch_curl, test[0], size, "Concurrent", date)
                 else:
-                    first = executor.submit(launch_iperf_udp, 11, "Concurrent")
+                    first = executor.submit(launch_iperf_udp, 12, "Concurrent")
 
                 i = 0
                 tstamp = ""
