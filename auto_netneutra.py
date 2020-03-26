@@ -101,7 +101,7 @@ def launch_iperf_udp(delay, type="Single"):
     global normal_rate_kbps
     bandwidth = str(int(normal_rate_kbps))+"k"
     i=1
-    while True:
+    while True and i<6:
         success = False
         port = random.randrange(9200, 9223)
         if DEBUG:
