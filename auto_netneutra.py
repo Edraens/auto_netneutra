@@ -23,7 +23,7 @@ import random
 import json
 
 # Paramètres
-DEBUG = True
+DEBUG = False
 
 
 def save_csv_single(result):
@@ -418,19 +418,20 @@ def run_concurrent_tests(tests, size):
 
         print(color+" Port "+test[0]+" / Port "+test[1]+" : "+f"{int(rate1):_}"+" kbps / "+f"{int(rate2):_}"+" kbps - Diff. "+str(
             difference)+" - ETA : " + remaining_time_concurrent(j, len(tests))+" "+message+"\033[0m")
-        j = j+1
+
         if is_anormal_concurrent(difference, rate1, rate2) and color == "??" and not (test[0] == "UDP" or test[1] == "UDP"):
-            first_verif = executor.submit(
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                first_verif = executor.submit(
                 launch_curl, test[0], size, "Concurrent", date)
-            second_verif = executor.submit(
+                second_verif = executor.submit(
                 launch_curl, test[1], size, "Concurrent", date)
 
             i = 0
             tstamp = ""
+            difference_verif = 0
             while not first_verif.done() or not second_verif.done():
                 time.sleep(0.5)
                 if first_verif.done():
-                    difference_verif = 0
                     while not second_verif.done():
                         time.sleep(1)
                         difference_verif = difference_verif + 1
@@ -448,15 +449,15 @@ def run_concurrent_tests(tests, size):
             rate2_verif = str(int(second_verif.result()/1024))
 
             if is_anormal_concurrent(difference_verif, rate1_verif, rate2_verif):
-                color = "\033[93m"
+                color = "\033[93m!!"
                 message = "!! Débit ANORMAL (2/2) !!"
                 result['flag'] = "ANORMAL_RATE"
             else:
                 if tcpdump == "True":
                     os.remove(tcpdump_process[1])
 
-            print(color+" Port "+test[0]+" / Port "+test[1]+" : "+f"{int(rate1_verif):_}"+" kbps / "+f"{int(rate2_verif):._}"+" kbps - Diff. "+str(
-                difference_verif)+" - ETA : " + remaining_time_concurrent(j, len(test))+" "+message+"\033[0m")
+            print(color+" Port "+test[0]+" / Port "+test[1]+" : "+f"{int(rate1_verif):_}"+" kbps / "+f"{int(rate2_verif):_}"+" kbps - Diff. "+str(
+                difference_verif)+" - "+message+"\033[0m")
         result['datetime'] = date
         result['size'] = size
         result['port1'] = test[0]
@@ -464,6 +465,7 @@ def run_concurrent_tests(tests, size):
         result['kbps1'] = rate1
         result['kbps2'] = rate2
         save_csv_concurrent(result)
+        j = j+1
 
 
 def main():
