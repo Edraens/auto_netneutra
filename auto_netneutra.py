@@ -23,7 +23,7 @@ import random
 import json
 
 # Paramètres
-DEBUG = True
+DEBUG = False
 
 
 def save_csv_single(result):
