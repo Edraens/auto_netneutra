@@ -24,6 +24,7 @@ import concurrent.futures
 TIMEOUT = 20
 DEBUG = False
 
+# curl -4 -o /dev/null -F "filecontent=@/tmp/1G.iso" http://bouygues.testdebit.info PENDANT UN DL et on MESURE LE DL
 
 def save_csv_single(result):
     global isp
