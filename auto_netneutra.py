@@ -19,9 +19,10 @@ import re
 import csv
 import configparser
 import concurrent.futures
+import random
+import json
 
 # Paramètres
-TIMEOUT = 20
 DEBUG = False
 
 # curl -4 -o /dev/null -F "filecontent=@/tmp/1G.iso" http://bouygues.testdebit.info PENDANT UN DL et on MESURE LE DL
@@ -70,18 +71,24 @@ def launch_curl(port, size, type, date):
     else:
         protocol = "https"
 
+    url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso'
+
     if DEBUG:
         args = ""
-    else: args = "-s"
+        print(url)
+    else:
+        args = "-s"
 
-    url = protocol+'://paris.testdebit.info:' + port+'/'+size+'/'+size+'.iso'
-    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url+' --connect-timeout 5 '+args, shell=True, stdout=subprocess.PIPE)
+    cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url +
+                           ' --connect-timeout 5 --max-time 10 '+args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
         time.sleep(2)
         if cmd.poll() != None:
             if DEBUG:
                 print(cmd.poll())
-            if cmd.poll() in (7, 28):
+            if cmd.poll() == 28:
+                break
+            elif cmd.poll() == 7:
                 raise Exception("curl_closed")
             elif cmd.poll() != 0:
                 raise Exception("curl_error")
@@ -89,6 +96,46 @@ def launch_curl(port, size, type, date):
 
     rate = float(cmd.stdout.readline().decode("utf-8").replace(",", "."))*8
     return(rate)
+
+
+def launch_iperf_udp(delay, type="Single"):
+    global normal_rate_kbps
+    bandwidth = str(int(normal_rate_kbps))+"k"
+    i=1
+    while True and i<6:
+        success = False
+        port = random.randrange(9200, 9223)
+        if DEBUG:
+            print("iPerf sur port "+str(port))
+            print("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -R -b "+bandwidth+" -t "+str(delay))
+        cmd = subprocess.Popen("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -J -R -b "+bandwidth+" -t "+str(delay),
+                               shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+        result = json.loads(cmd.communicate()[0])
+
+        while True:
+            time.sleep(2)
+            if cmd.poll() != None:
+                if DEBUG:
+                    print(cmd.poll())
+                if cmd.poll() == 0:
+                    success = True
+                break
+        
+        if success:
+            sender_rate = result['end']['sum']['bits_per_second']
+            lost_percentage = result['end']['sum']['lost_percent']/100
+
+            rate = int(sender_rate*(1-lost_percentage)/1000)
+            break
+        i=i+1
+
+    if DEBUG:
+        print("Nombre d'essais : "+str(i))
+
+    if type == "Concurrent" and i>1:
+        return(-2)
+    else: return (rate)
 
 
 def launch_tcpdump(port, size, type, interface, date):
@@ -172,16 +219,29 @@ def run_single_tests(ports, size):
             tcpdump_process = launch_tcpdump(
                 port, size, "Single", interface, date)
         time.sleep(1)
-        try:
-            status = "ok"
-            resultrate = str(int(launch_curl(port, size, "Single", date)/1024))
-            if is_anormal_single(resultrate):
-                status = "low_rate"
-        except Exception as e:
-            resultrate = "0"
-            if e.args[0] == "curl_closed":
-                status = "closed"
-            pass
+
+        if port != "UDP":
+            try:
+                status = "ok"
+                resultrate = str(
+                    int(launch_curl(port, size, "Single", date)/1024))
+                if is_anormal_single(resultrate):
+                    status = "low_rate"
+            except Exception as e:
+                resultrate = "0"
+                if e.args[0] == "curl_closed":
+                    status = "closed"
+                pass
+        else:
+            try:
+                status = "ok"
+                resultrate = launch_iperf_udp(8)
+                if is_anormal_single(resultrate):
+                    status = "low_rate"
+            except Exception as e:
+                resultrate = "0"
+                pass
+
         if tcpdump == "True":
             tcpdump_process[0].terminate()
 
@@ -198,31 +258,36 @@ def run_single_tests(ports, size):
             result['flag'] = "UNREACHABLE"
 
         elif status == "low_rate":
-            color = "!!"
-            message = "!! Débit ANORMAL (1/2) !!"
-            print(color+" TCP "+port+" : "+f"{int(resultrate):_}"+" kbps - ETA : " +
-                  remaining_time_single(i)+" "+message+"\033[0m")
+            if port != "UDP":
+                color = "!!"
+                message = "!! Débit ANORMAL (1/2) !!"
+                print(color+" Port "+port+" : "+f"{int(resultrate):_}"+" kbps - ETA : " +
+                    remaining_time_single(i)+" "+message+"\033[0m")
 
-            statusconfirm = "low_rate"
-            try:
-                resultconfirm = str(
-                    int(launch_curl(port, size, "Single", date)/1024))
-                if not is_anormal_single(resultconfirm):
-                    statusconfirm = "ok"
-            except Exception as e:
-                print(e.args)
-                pass
+                statusconfirm = "low_rate"
+                try:
+                    resultconfirm = str(
+                        int(launch_curl(port, size, "Single", date)/1024))
+                    if not is_anormal_single(resultconfirm):
+                        statusconfirm = "ok"
+                except Exception as e:
+                    print(e.args)
+                    pass
 
-            if statusconfirm == "ok":
-                message = ""
-                color = "--"
-                result['flag'] = "pass"
-            elif status == "low_rate":
+                if statusconfirm == "ok":
+                    message = ""
+                    color = "--"
+                    result['flag'] = "pass"
+                elif status == "low_rate":
+                    color = "\033[93m!!"
+                    message = "!! Débit ANORMAL (2/2) !!"
+                    result['flag'] = "ANORMAL_RATE"
+                resultrate = resultconfirm
+            else:
                 color = "\033[93m!!"
-                message = "!! Débit ANORMAL (2/2) !!"
-                result['flag'] = "ANORMAL_RATE"
-            resultrate = resultconfirm
-        print(color+" TCP "+port+" : "+f"{int(resultrate):_}"+" kbps - ETA : " +
+                message = "!! Test UDP (vérif. manuelle) !!"
+                result['flag'] = "UDP"
+        print(color+" Port "+port+" : "+f"{int(resultrate):_}"+" kbps - ETA : " +
               remaining_time_single(i)+" "+message+"\033[0m")
 
         result['datetime'] = date
@@ -262,105 +327,138 @@ def run_concurrent_tests(tests, size):
     for test in tests:
         result = {}
         date = datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
-        if tcpdump == "True":
-            tcpdump_process = launch_tcpdump(
-                "s"+test[0]+"-"+test[1], size, "Concurrent", interface, date)
-        time.sleep(0.8)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            first = executor.submit(
-                launch_curl, test[0], size, "Concurrent", date)
-            second = executor.submit(
-                launch_curl, test[1], size, "Concurrent", date)
-            i = 0
-            tstamp = ""
-            while not first.done() or not second.done():
-                time.sleep(1)
-                if first.done():
-                    difference = 0
-                    while not second.done():
-                        time.sleep(1)
-                        difference = difference + 1
-                elif second.done():
-                    difference = 0
-                    while not first.done():
-                        time.sleep(1)
-                        difference = difference + 1
+        rate1 = 0
+        rate2 = 0
+        testing = True
+        while testing:
 
-            time.sleep(1)
             if tcpdump == "True":
-                tcpdump_process[0].terminate()
-                time.sleep(1)
-            message = ""
-            color = "--"
-            result['flag'] = "pass"
+                tcpdump_process = launch_tcpdump(
+                    "s"+test[0]+"-"+test[1], size, "Concurrent", interface, date)
+            time.sleep(0.8)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
 
-            rate1 = str(int(first.result()/1024))
-            rate2 = str(int(second.result()/1024))
-
-            if is_anormal_concurrent(difference, rate1, rate2):
-                color = "??"
-                message = "!! Débit ANORMAL (1/2) !!"
-
-            if first.result() == -1 or second.result() == -1:
-                if first.result() == -1:
-                    rate1 = str('0')
+                if test[1] != "UDP":
+                    second = executor.submit(
+                        launch_curl, test[1], size, "Concurrent", date)
                 else:
-                    rate1 = str(int(first.result()))
+                    second = executor.submit(launch_iperf_udp, 12, "Concurrent")
+                    time.sleep(1)
 
-                if second.result() == -1:
-                    rate2 = str('0')
+                if test[0] != "UDP":
+                    first = executor.submit(
+                        launch_curl, test[0], size, "Concurrent", date)
                 else:
-                    rate2 = str(int(second.result()))
-
-                color = "\033[91mXX"
-                message = "!! Serveur INJOIGNABLE (port bloqué ?) !!"
-                result['flag'] = "UNREACHABLE"
-
-            if message == "":
-                if tcpdump == "True":
-                    os.remove(tcpdump_process[1])
-
-            print(color+" TCP "+test[0]+" / TCP "+test[1]+" : "+f"{int(rate1):_}"+" kbps / "+f"{int(rate2):_}"+" kbps - Diff. "+str(
-                difference)+" - ETA : " + remaining_time_concurrent(j, len(tests))+" "+message+"\033[0m")
-            j = j+1
-            if is_anormal_concurrent(difference, rate1, rate2) and color == "??":
-                first_verif = executor.submit(
-                    launch_curl, test[0], size, "Concurrent", date)
-                second_verif = executor.submit(
-                    launch_curl, test[1], size, "Concurrent", date)
+                    first = executor.submit(launch_iperf_udp, 12, "Concurrent")
 
                 i = 0
                 tstamp = ""
-                while not first_verif.done() or not second_verif.done():
-                    time.sleep(0.5)
-                    if first_verif.done():
-                        difference_verif = 0
-                        while not second_verif.done():
+                while not first.done() or not second.done():
+                    time.sleep(1)
+                    if first.done():
+                        difference = 0
+                        while not second.done():
                             time.sleep(1)
-                            difference_verif = difference_verif + 1
-                    elif second_verif.done():
-                        difference_verif = 0
-                        while not first_verif.done():
+                            difference = difference + 1
+                    elif second.done():
+                        difference = 0
+                        while not first.done():
                             time.sleep(1)
-                            difference_verif = difference_verif + 1
+                            difference = difference + 1
 
                 time.sleep(1)
-                message = ""
-                color = "--"
+                if tcpdump == "True":
+                    tcpdump_process[0].terminate()
+                    time.sleep(1)
 
-                rate1_verif = str(int(first_verif.result()/1024))
-                rate2_verif = str(int(second_verif.result()/1024))
+                if int(first.result()) != -2 and int(second.result()) != -2:
+                    testing = False
+                elif DEBUG:
+                    print("Retry concurrent, iPerf KO...")
 
-                if is_anormal_concurrent(difference_verif, rate1_verif, rate2_verif):
-                    color = "\033[93m!!"
-                    message = "!! Débit ANORMAL (2/2) !!"
-                    result['flag'] = "ANORMAL_RATE"
-                else:
-                    if tcpdump == "True":
-                        os.remove(tcpdump_process[1])
+        message = ""
+        color = "--"
+        result['flag'] = "pass"
 
-                print(color+" TCP "+test[0]+" / TCP "+test[1]+" : "+f"{int(rate1_verif):_}"+" kbps / "+f"{int(rate2_verif):._}"+" kbps - Diff. "+str(
-                    difference_verif)+" - ETA : " + remaining_time_concurrent(j, len(test))+" "+message+"\033[0m")
+        if test[0] != "UDP":
+            rate1 = str(int(first.result()/1024))
+        else:
+            rate1 = str(int(first.result()))
+        if test[1] != "UDP":
+            rate2 = str(int(second.result()/1024))
+        else:
+            rate2 = str(int(second.result()))
+
+        if is_anormal_concurrent(difference, rate1, rate2):
+            color = "??"
+            message = "!! Débit ANORMAL (1/2) !!"
+
+        if first.result() == -1 or second.result() == -1:
+            if first.result() == -1:
+                rate1 = str('0')
+            else:
+                rate1 = str(int(first.result()))
+
+            if second.result() == -1:
+                rate2 = str('0')
+            else:
+                rate2 = str(int(second.result()))
+
+            color = "\033[91mXX"
+            message = "!! Serveur INJOIGNABLE (port bloqué ?) !!"
+            result['flag'] = "UNREACHABLE"
+
+        if message == "":
+            if tcpdump == "True":
+                os.remove(tcpdump_process[1])
+
+        if (test[0] == "UDP" or test[1] == "UDP"):
+            color = "\033[93m!!"
+            message = "!! Test UDP (vérif. manuelle) !!"
+            result['flag'] = "UDP"
+
+        print(color+" Port "+test[0]+" / Port "+test[1]+" : "+f"{int(rate1):_}"+" kbps / "+f"{int(rate2):_}"+" kbps - Diff. "+str(
+            difference)+" - ETA : " + remaining_time_concurrent(j, len(tests))+" "+message+"\033[0m")
+
+        if is_anormal_concurrent(difference, rate1, rate2) and color == "??" and not (test[0] == "UDP" or test[1] == "UDP"):
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                first_verif = executor.submit(
+                launch_curl, test[0], size, "Concurrent", date)
+                second_verif = executor.submit(
+                launch_curl, test[1], size, "Concurrent", date)
+
+            i = 0
+            tstamp = ""
+            difference_verif = 0
+            while not first_verif.done() or not second_verif.done():
+                time.sleep(0.5)
+                if first_verif.done():
+                    while not second_verif.done():
+                        time.sleep(1)
+                        difference_verif = difference_verif + 1
+                elif second_verif.done():
+                    difference_verif = 0
+                    while not first_verif.done():
+                        time.sleep(1)
+                        difference_verif = difference_verif + 1
+
+            time.sleep(1)
+            message = ""
+            color = "--"
+
+            rate1_verif = str(int(first_verif.result()/1024))
+            rate2_verif = str(int(second_verif.result()/1024))
+
+            if is_anormal_concurrent(difference_verif, rate1_verif, rate2_verif):
+                color = "\033[93m!!"
+                message = "!! Débit ANORMAL (2/2) !!"
+                result['flag'] = "ANORMAL_RATE"
+            else:
+                if tcpdump == "True":
+                    os.remove(tcpdump_process[1])
+
+            print(color+" Port "+test[0]+" / Port "+test[1]+" : "+f"{int(rate1_verif):_}"+" kbps / "+f"{int(rate2_verif):_}"+" kbps - Diff. "+str(
+                difference_verif)+" - "+message+"\033[0m")
         result['datetime'] = date
         result['size'] = size
         result['port1'] = test[0]
@@ -368,6 +466,7 @@ def run_concurrent_tests(tests, size):
         result['kbps1'] = rate1
         result['kbps2'] = rate2
         save_csv_concurrent(result)
+        j = j+1
 
 
 def main():
@@ -400,6 +499,10 @@ def main():
         ports = config['auto_netneutra']['custom_ports'].replace(
             " ", "").split(",")
         ports_str = config['auto_netneutra']['custom_ports']
+
+    if config['auto_netneutra']['iperf_udp'] == "True":
+        ports.append("UDP")
+        ports_str = ports_str+" + iPerf UDP"
     else:
         print("!! Configuration des ports incorrecte")
         exit()
