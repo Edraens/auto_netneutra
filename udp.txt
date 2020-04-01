@@ -1,0 +1,2 @@
+iperf3 -4 -u -c paris.testdebit.info -p 9218 -R -b 900000 -t 1000 -i 1
+curl -4 -o /dev/null https://bouygues.testdebit.info/10G.iso --connect-timeout 5
