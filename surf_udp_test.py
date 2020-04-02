@@ -135,18 +135,20 @@ def launch_tests(ulproto):
     displayresult.append("")
     return displayresult
 
-if __name__ == "__main__":
-    displayresult = []
-    if UPLINK_PROTOCOL == "ALL":
-        launch_tests("None")
-        print("")
-        time.sleep(6)
-        launch_tests("TCP")
-        print("")
-        time.sleep(6)
-        launch_tests("UDP")
-    else:
-        launch_tests(UPLINK_PROTOCOL)
+# if __name__ == "__main__":
+#     displayresult = []
+#     if UPLINK_PROTOCOL == "ALL":
+#         launch_tests("None")
+#         print("")
+#         time.sleep(6)
+#         launch_tests("TCP")
+#         print("")
+#         time.sleep(6)
+#         launch_tests("UDP")
+#     else:
+#         launch_tests(UPLINK_PROTOCOL)
 
-    for result in displayresult:
-        print(result)
+#     for result in displayresult:
+#         print(result)
+
+create_tmp_file()
