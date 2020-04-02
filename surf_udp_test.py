@@ -30,7 +30,7 @@ def launch_curl_uplink(probe=False):
         while True:
             time.sleep(2)
             if cmd.poll() != None:
-                if cmd.returncode == -15:
+                if cmd.returncode != 0:
                     return
                 break
         if probe:
