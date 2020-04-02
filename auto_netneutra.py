@@ -86,12 +86,6 @@ def launch_curl(port, size, type, date):
         if cmd.poll() != None:
             if DEBUG:
                 print(cmd.poll())
-            if cmd.poll() == 28:
-                break
-            elif cmd.poll() == 7:
-                raise Exception("curl_closed")
-            elif cmd.poll() != 0:
-                raise Exception("curl_error")
             break
 
     rate = float(cmd.stdout.readline().decode("utf-8").replace(",", "."))*8
