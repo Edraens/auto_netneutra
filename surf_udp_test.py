@@ -28,7 +28,7 @@ def launch_curl_uplink(probe=False):
         output = subprocess.STDOUT
     while True:
         cmd = subprocess.Popen(
-            'curl -4 -o /dev/null -w %{speed_upload} -F "filecontent=@/tmp/3000M_tmp.iso" http://bouygues.testdebit.info '+args, shell=True, stdout=output,stderr=output)
+            'curl -4 -o /dev/null -w %{speed_upload} -F filecontent=@/tmp/3000M_tmp.iso http://bouygues.testdebit.info '+args, shell=True, stdout=output,stderr=output)
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -151,4 +151,3 @@ if __name__ == "__main__":
 
     for result in displayresult:
         print(result)
-        
