@@ -8,7 +8,7 @@ from selenium import webdriver
 # Protocole à utiliser pour saturer l'uplink (TCP, UDP ou None pour désactiver l'uplink. ALL pour tester les 3)
 UPLINK_PROTOCOL = "ALL"
 # Nombre de tests à effectuer par site web
-NB_OF_TESTS = 3
+NB_OF_TESTS = 5
 
 def create_tmp_file():
     if not os.path.exists("/tmp/3000M_tmp.iso"):
