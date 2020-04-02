@@ -6,7 +6,7 @@ import random
 from selenium import webdriver
 
 # Protocole à utiliser pour saturer l'uplink (TCP, UDP ou None pour désactiver l'uplink. ALL pour tester les 3)
-UPLINK_PROTOCOL = "ALL"
+UPLINK_PROTOCOL = "UDP"
 # Nombre de tests à effectuer par site web
 NB_OF_TESTS = 1
 
@@ -21,14 +21,12 @@ def create_tmp_file():
 
 def launch_curl_uplink(probe=False):
     if probe:
-        args = "--max-time 25"
-        output = subprocess.PIPE
+        args = "--max-time 20"
     else: 
         args = ""
-        output = subprocess.STDOUT
     while True:
         cmd = subprocess.Popen(
-            'curl -4 -o /dev/null -w %{speed_upload} -F filecontent=@/tmp/3000M_tmp.iso http://bouygues.testdebit.info '+args, shell=True, stdout=output,stderr=output)
+            'curl -4 -o /dev/null -w %{speed_upload} -F "filecontent=@/tmp/3000M_tmp.iso" http://bouygues.testdebit.info '+args, shell=True, stdout=subprocess.PIPE)
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -112,7 +110,9 @@ def launch_tests(ulproto):
 
     elif ulproto == "UDP":
         print("Testing surf performance with UDP upload")
-        print("Polling max uplink rate for 25 seconds...")
+        create_tmp_file()
+        time.sleep(3)
+        print("Polling max uplink rate for 20 seconds...")
         maxrate_kbps = round(launch_curl_uplink(True)*1.15)
         print("Launching continuous UDP upload at "+str(maxrate_kbps)+" kbps...")
         launch_iperf_uplink(maxrate_kbps)
