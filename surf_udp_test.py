@@ -14,11 +14,8 @@ def create_tmp_file():
     if not os.path.exists("/tmp/3000M_tmp.iso"):
         print("Creating temporary file...")
         cmd = subprocess.Popen("dd if=/dev/urandom of=/tmp/3000M_tmp.iso bs=64000000 count=50",
-                               shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while True:
-            time.sleep(2)
-            if cmd.poll() != None:
-                break
+                               shell=True)
+        cmd.wait()
         print("/tmp/3000M_tmp.iso created")
     else: print("Temporary file exists")
 
