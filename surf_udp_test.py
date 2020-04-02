@@ -28,7 +28,7 @@ def launch_curl_uplink(probe=False):
         output = subprocess.STDOUT
     while True:
         cmd = subprocess.Popen(
-            "curl -4 -o /dev/null -w %{speed_upload} -F 'filecontent=@/tmp/3000M_tmp.iso' http://bouygues.testdebit.info "+args, shell=True, stdout=output,stderr=output)
+            'curl -4 -o /dev/null -w %{speed_upload} -F "filecontent=@/tmp/3000M_tmp.iso" http://bouygues.testdebit.info '+args, shell=True, stdout=output,stderr=output)
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -102,6 +102,7 @@ def launch_tests(ulproto):
     if ulproto == "TCP":
         print("Testing surf performance with TCP upload")
         create_tmp_file()
+        time.sleep(3)
         print("Launching continuous TCP upload...")
         curlUplinkThread = threading.Thread(target=launch_curl_uplink)
         curlUplinkThread.setDaemon(True)
@@ -135,20 +136,19 @@ def launch_tests(ulproto):
     displayresult.append("")
     return displayresult
 
-# if __name__ == "__main__":
-#     displayresult = []
-#     if UPLINK_PROTOCOL == "ALL":
-#         launch_tests("None")
-#         print("")
-#         time.sleep(6)
-#         launch_tests("TCP")
-#         print("")
-#         time.sleep(6)
-#         launch_tests("UDP")
-#     else:
-#         launch_tests(UPLINK_PROTOCOL)
+if __name__ == "__main__":
+    displayresult = []
+    if UPLINK_PROTOCOL == "ALL":
+        launch_tests("None")
+        print("")
+        time.sleep(6)
+        launch_tests("TCP")
+        print("")
+        time.sleep(6)
+        launch_tests("UDP")
+    else:
+        launch_tests(UPLINK_PROTOCOL)
 
-#     for result in displayresult:
-#         print(result)
-
-create_tmp_file()
+    for result in displayresult:
+        print(result)
+        
