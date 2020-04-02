@@ -6,7 +6,7 @@ import random
 from selenium import webdriver
 
 # Protocole à utiliser pour saturer l'uplink (TCP, UDP ou None pour désactiver l'uplink. ALL pour tester les 3)
-UPLINK_PROTOCOL = "ALL"
+UPLINK_PROTOCOL = "UDP"
 # Nombre de tests à effectuer par site web
 NB_OF_TESTS = 3
 
@@ -30,7 +30,7 @@ def launch_curl_uplink(probe=False):
         while True:
             time.sleep(2)
             if cmd.poll() != None:
-                if cmd.returncode != 0:
+                if cmd.returncode != 0 and not probe:
                     return
                 break
         if probe:
