@@ -40,7 +40,7 @@ def launch_curl_uplink(probe=False):
                 break
         if probe:
             break
-    raw_rate = cmd.stdout.readline().decode("utf-8")
+    raw_rate = cmd.stdout.readline().decode("utf-8").replace(",", ".")
     rate = round(float(raw_rate)/125)
     return rate
 
