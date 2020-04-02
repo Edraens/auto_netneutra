@@ -6,7 +6,7 @@ import random
 from selenium import webdriver
 
 # Protocole à utiliser pour saturer l'uplink (TCP, UDP ou None pour désactiver l'uplink. ALL pour tester les 3)
-UPLINK_PROTOCOL = "ALL"
+UPLINK_PROTOCOL = "UDP"
 # Nombre de tests à effectuer par site web
 NB_OF_TESTS = 1
 
@@ -24,14 +24,14 @@ def create_tmp_file():
 
 def launch_curl_uplink(probe=False):
     if probe:
-        args = "--max-time 10"
+        args = "--max-time 25"
         output = subprocess.PIPE
     else: 
         args = ""
         output = subprocess.STDOUT
     while True:
         cmd = subprocess.Popen(
-            "curl -4 -o /dev/null -F 'filecontent=@/tmp/3000M_tmp.iso' http://bouygues.testdebit.info "+args, shell=True, stderr=output)
+            "curl -4 -o /dev/null -w %{speed_upload} -F 'filecontent=@/tmp/3000M_tmp.iso' http://bouygues.testdebit.info "+args, shell=True, stdout=output,stderr=output)
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -40,11 +40,8 @@ def launch_curl_uplink(probe=False):
                 break
         if probe:
             break
-    raw_rate = cmd.communicate()[1].decode("utf-8").split("\n")[2].split("\r")[-1].split(" ")[-1]
-    if "M" in raw_rate:
-        rate = float(raw_rate.replace("M", ""))*8*1000
-    elif "k" in raw_rate:
-        rate = float(raw_rate.replace("k", ""))*8
+    raw_rate = cmd.stdout.readline().decode("utf-8")
+    rate = round(float(raw_rate)/125)
     return rate
 
 def launch_iperf_uplink(maxrate_kbps):
@@ -117,9 +114,8 @@ def launch_tests(ulproto):
 
     elif ulproto == "UDP":
         print("Testing surf performance with UDP upload")
-        print("Polling max uplink rate for 10 seconds...")
-        maxrate_kbps = round(launch_curl_uplink(True)*1.25)
-        print(maxrate_kbps)
+        print("Polling max uplink rate for 25 seconds...")
+        maxrate_kbps = round(launch_curl_uplink(True)*1.35)
         print("Launching continuous UDP upload at "+str(maxrate_kbps)+" kbps...")
         launch_iperf_uplink(maxrate_kbps)
         time.sleep(2.5)
