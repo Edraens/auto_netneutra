@@ -80,7 +80,7 @@ def launch_curl(port, size, type, date):
         args = "-s"
 
     cmd = subprocess.Popen('curl -4 -o /dev/null -w %{speed_download} '+url +
-                           ' --connect-timeout 5 --max-time 10 '+args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                           ' --connect-timeout 10 --max-time 10 '+args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
         time.sleep(2)
         if cmd.poll() != None:
