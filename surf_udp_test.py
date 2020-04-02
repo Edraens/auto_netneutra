@@ -113,7 +113,7 @@ def launch_tests(ulproto):
         create_tmp_file()
         time.sleep(3)
         print("Polling max uplink rate for 20 seconds...")
-        maxrate_kbps = round(launch_curl_uplink(True)*1.15)
+        maxrate_kbps = round(launch_curl_uplink(True)*1.25)
         print("Launching continuous UDP upload at "+str(maxrate_kbps)+" kbps...")
         launch_iperf_uplink(maxrate_kbps)
         time.sleep(4)
