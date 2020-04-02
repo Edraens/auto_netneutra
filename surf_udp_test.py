@@ -115,10 +115,10 @@ def launch_tests(ulproto):
     elif ulproto == "UDP":
         print("Testing surf performance with UDP upload")
         print("Polling max uplink rate for 25 seconds...")
-        maxrate_kbps = round(launch_curl_uplink(True)*1.35)
+        maxrate_kbps = round(launch_curl_uplink(True)*1.15)
         print("Launching continuous UDP upload at "+str(maxrate_kbps)+" kbps...")
         launch_iperf_uplink(maxrate_kbps)
-        time.sleep(2.5)
+        time.sleep(4)
         print("")
     else:
         print("Testing surf performance without uplink stress")
