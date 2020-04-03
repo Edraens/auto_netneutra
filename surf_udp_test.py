@@ -79,16 +79,23 @@ def run_browsing_tests():
         full_url = 'http://tpr.testdebit.info/pageswebSTB/'+url
         sum_result = 0
         for i in range (0, NB_OF_TESTS):
-            driver = webdriver.Chrome()
-            driver.get(full_url)
-            responseStart = driver.execute_script(
-                "return window.performance.timing.responseStart")
-            domComplete = driver.execute_script(
-                "return window.performance.timing.domComplete")
-            delay = domComplete - responseStart
-            sum_result = sum_result + delay
-            print(url+" "+str(delay))
-            driver.quit()
+            testing = True
+            while True:
+                driver = webdriver.Chrome()
+                driver.get(full_url)
+                responseStart = driver.execute_script(
+                    "return window.performance.timing.responseStart")
+                domComplete = driver.execute_script(
+                    "return window.performance.timing.domComplete")
+                delay = domComplete - responseStart
+
+                if delay > 0:
+                    sum_result = sum_result + delay
+                    print(url+" "+str(delay))
+                    driver.quit()
+                    break
+                else:
+                    print("Wrong result, retry")
 
         avg_webpage = round((sum_result/NB_OF_TESTS)/1000, 2)
         results.update({url: avg_webpage})
