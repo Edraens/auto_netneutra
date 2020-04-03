@@ -90,6 +90,7 @@ def run_browsing_tests():
             driver.quit()
 
         avg_webpage = round((sum_result/NB_OF_TESTS)/1000, 2)
+        print(url+" "+avg_webpage)
         results.update({url: avg_webpage})
 
     return results
