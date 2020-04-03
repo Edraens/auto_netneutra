@@ -87,7 +87,7 @@ def run_browsing_tests():
                 "return window.performance.timing.domComplete")
             delay = domComplete - responseStart
             sum_result = sum_result + delay
-            print(url+" "+delay)
+            print(url+" "+str(delay))
             driver.quit()
 
         avg_webpage = round((sum_result/NB_OF_TESTS)/1000, 2)
