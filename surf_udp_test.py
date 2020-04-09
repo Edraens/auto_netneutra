@@ -7,6 +7,7 @@ from selenium import webdriver
 
 # Protocole à utiliser pour saturer l'uplink (TCP, UDP ou None pour désactiver l'uplink. ALL pour tester les 3)
 UPLINK_PROTOCOL = "ALL"
+IP_VERSION = "4"
 # Nombre de tests à effectuer par site web
 NB_OF_TESTS = 5
 
@@ -26,7 +27,7 @@ def launch_curl_uplink(probe=False):
         args = ""
     while True:
         cmd = subprocess.Popen(
-            'curl -4 -o /dev/null -w %{speed_upload} -F "filecontent=@/tmp/3000M_tmp.iso" http://bouygues.testdebit.info '+args, shell=True, stdout=subprocess.PIPE)
+            'curl -'+IP_VERSION+' -o /dev/null -w %{speed_upload} -F "filecontent=@/tmp/3000M_tmp.iso" http://bouygues.testdebit.info '+args, shell=True, stdout=subprocess.PIPE)
         while True:
             time.sleep(2)
             if cmd.poll() != None:
@@ -43,7 +44,7 @@ def launch_iperf_uplink(maxrate_kbps):
     i = 0
     while i < 30:
         port = random.randrange(9200, 9223)
-        cmd = subprocess.Popen("iperf3 -4 -u -c paris.testdebit.info -p "+str(port)+" -b "+str(maxrate_kbps)+"k -t 5000 -i 5",
+        cmd = subprocess.Popen("iperf3 -'+IP_VERSION+' -u -c paris.testdebit.info -p "+str(port)+" -b "+str(maxrate_kbps)+"k -t 5000 -i 5",
                                shell=True)
 
         time.sleep(2)
