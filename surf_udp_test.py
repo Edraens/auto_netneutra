@@ -44,7 +44,7 @@ def launch_iperf_uplink(maxrate_kbps):
     i = 0
     while i < 30:
         port = random.randrange(9200, 9223)
-        cmd = subprocess.Popen("iperf3 -'+IP_VERSION+' -u -c paris.testdebit.info -p "+str(port)+" -b "+str(maxrate_kbps)+"k -t 5000 -i 5",
+        cmd = subprocess.Popen("iperf3 -"+IP_VERSION+" -u -c paris.testdebit.info -p "+str(port)+" -b "+str(maxrate_kbps)+"k -t 5000 -i 5",
                                shell=True)
 
         time.sleep(2)
